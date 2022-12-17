@@ -40,13 +40,17 @@ fn main() -> Result<()> {
                 .into_iter()
                 .map(|cell_pointer| {
                     let stream = &database[cell_pointer as usize..];
-                    let (_payload_size, offset) = parse_varint(stream); // 
+                    let (_payload_size, offset) = parse_varint(stream); //
                     let (_rowid, read_bytes) = parse_varint(&stream[offset..]);
                     parse_record(&stream[offset + read_bytes..], 5)
                         .map(|record| Schema::parse(record).expect("Invalid record"))
                 })
                 .collect::<Result<Vec<_>>>()?;
 
+            let page_size =
+                u16::from_be_bytes(TryInto::<[u8; 2]>::try_into(&database[16..18]).unwrap());
+
+            println!("database page size: {}", page_size);
             println!("number of tables: {}", schemas.len());
         }
         _ => bail!("Missing or invalid command passed: {}", command),
